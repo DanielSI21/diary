@@ -74,6 +74,7 @@ Otros scripts:
    - **Framework preset:** Vite
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
+   - **Deploy command:** dejar vacio. No uses `npx wrangler deploy` en Pages.
 4. En **Settings → Environment variables** añade `VITE_SUPABASE_URL` y
    `VITE_SUPABASE_ANON_KEY` (para Production y Preview).
 5. Deploy. Cada push redepliega automáticamente.
@@ -86,6 +87,8 @@ Otros scripts:
 ```bash
 npm run build
 npx wrangler pages deploy dist
+# o, si tienes Wrangler disponible:
+npm run deploy:pages
 ```
 
 (Define las variables de entorno con `npx wrangler pages secret put ...` o en el dashboard.)
