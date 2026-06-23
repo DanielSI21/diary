@@ -66,29 +66,27 @@ Otros scripts:
 
 ## 5. Desplegar en Cloudflare Pages
 
-### Opción A — desde el dashboard (recomendada)
+### Opción A — desde el dashboard (Workers + Static Assets)
 
 1. Sube este repo a GitHub/GitLab.
-2. En Cloudflare → **Workers & Pages → Create → Pages → Connect to Git**.
+2. En Cloudflare → **Workers & Pages → Create → Import a repository**.
 3. Selecciona el repo y configura:
-   - **Framework preset:** Vite
    - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Deploy command:** dejar vacio. No uses `npx wrangler deploy` en Pages.
+   - **Deploy command:** `npx wrangler deploy`
+   - **Path / Root directory:** `/`
 4. En **Settings → Environment variables** añade `VITE_SUPABASE_URL` y
    `VITE_SUPABASE_ANON_KEY` (para Production y Preview).
 5. Deploy. Cada push redepliega automáticamente.
 
-> **SPA routing:** ya se incluye [`public/_redirects`](public/_redirects) con
-> `/* /index.html 200` para que las rutas (`/day/...`, `/calendar`) funcionen al recargar.
+> **SPA routing:** [`wrangler.jsonc`](wrangler.jsonc) configura
+> `not_found_handling = "single-page-application"` para que las rutas (`/day/...`,
+> `/calendar`) funcionen al recargar.
 
 ### Opción B — CLI (Wrangler)
 
 ```bash
 npm run build
-npx wrangler pages deploy dist
-# o, si tienes Wrangler disponible:
-npm run deploy:pages
+npx wrangler deploy
 ```
 
 (Define las variables de entorno con `npx wrangler pages secret put ...` o en el dashboard.)
