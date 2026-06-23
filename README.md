@@ -80,7 +80,8 @@ Otros scripts:
 
 > **SPA routing:** [`wrangler.jsonc`](wrangler.jsonc) configura
 > `not_found_handling = "single-page-application"` para que las rutas (`/day/...`,
-> `/calendar`) funcionen al recargar.
+> `/calendar`) funcionen al recargar. No agregues `public/_redirects` en Workers
+> Static Assets, porque entra en conflicto con esta configuracion.
 
 ### Opción B — CLI (Wrangler)
 
