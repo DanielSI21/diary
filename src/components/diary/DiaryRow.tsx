@@ -45,20 +45,19 @@ export default function DiaryRow({ entry, tags, onChanged }: Props) {
       <div className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <input
+            type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            inputMode="numeric"
             aria-label="Hora de inicio"
-            className="input w-20 shrink-0 text-center font-mono tabular-nums"
+            className="input w-28 shrink-0 font-mono tabular-nums"
           />
           <span className="text-slate-400">→</span>
           <input
+            type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            inputMode="numeric"
             aria-label="Hora final (opcional)"
-            placeholder="fin"
-            className="input w-20 shrink-0 text-center font-mono tabular-nums placeholder:font-sans"
+            className="input w-28 shrink-0 font-mono tabular-nums"
           />
         </div>
         <input

@@ -142,7 +142,12 @@ function TagRow({ tag, onChanged }: { tag: Tag; onChanged: () => Promise<void> }
             onChange={(e) => setColor(e.target.value)}
             className="h-8 w-8 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0"
           />
-          <input value={name} onChange={(e) => setName(e.target.value)} className="input" autoFocus />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input min-w-0 flex-1"
+            autoFocus
+          />
           <button onClick={save} className="btn-primary shrink-0">
             Guardar
           </button>
@@ -153,17 +158,17 @@ function TagRow({ tag, onChanged }: { tag: Tag; onChanged: () => Promise<void> }
       ) : (
         <>
           <span className="h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: tag.color }} />
-          <span className={`flex-1 ${tag.active ? '' : 'text-slate-400 line-through'}`}>
+          <span className={`min-w-0 flex-1 truncate ${tag.active ? '' : 'text-slate-400 line-through'}`}>
             {tag.name}
             {!tag.active && <span className="ml-2 text-xs">(inactiva)</span>}
           </span>
-          <button onClick={toggleActive} className="btn-ghost text-xs" title="Activar/desactivar">
+          <button onClick={toggleActive} className="btn-ghost shrink-0 px-2 text-xs" title="Activar/desactivar">
             {tag.active ? 'Desactivar' : 'Activar'}
           </button>
-          <button onClick={() => setEditing(true)} className="btn-ghost text-xs">
+          <button onClick={() => setEditing(true)} className="btn-ghost shrink-0 px-2 text-xs">
             Editar
           </button>
-          <button onClick={remove} className="btn-ghost text-xs text-red-500">
+          <button onClick={remove} className="btn-ghost shrink-0 px-2 text-xs text-red-500">
             Eliminar
           </button>
         </>

@@ -31,9 +31,10 @@ export default function DayView() {
   const { notes, loading: notesLoading, refresh: refreshNotes } = useNotes(day);
   const { notes: dueNotes, refresh: refreshDue } = useDueNotes(day);
 
-  // El banner se resuelve marcando "hecho"; refresca también la lista de notas.
+  // El banner se resuelve marcando "hecho" o convirtiendo en objetivo;
+  // refresca notas y objetivos para reflejar ambos casos.
   const onDueChanged = async () => {
-    await Promise.all([refreshDue(), refreshNotes()]);
+    await Promise.all([refreshDue(), refreshNotes(), refreshGoals()]);
   };
 
   // Diálogo de porcentaje (compartido por sugerencia y por marcado directo).
@@ -109,7 +110,7 @@ export default function DayView() {
       </div>
 
       {/* Pendientes que vencen este día (visible en cualquier pestaña). */}
-      <PendingBanner notes={dueNotes} onChanged={onDueChanged} />
+      <PendingBanner day={day} notes={dueNotes} onChanged={onDueChanged} />
 
       {tab === 'day' && (
         <>

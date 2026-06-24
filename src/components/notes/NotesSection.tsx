@@ -61,11 +61,11 @@ export default function NotesSection({ day, notes, tags, loading, onChanged }: P
       <form onSubmit={add} className="space-y-2">
         <div className="flex items-center gap-2">
           <input
+            type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            inputMode="numeric"
             aria-label="Hora"
-            className="input w-20 shrink-0 text-center font-mono tabular-nums"
+            className="input w-28 shrink-0 font-mono tabular-nums"
           />
           <TagSelect tags={tags} value={tagId} onChange={setTagId} className="flex-1" />
         </div>
