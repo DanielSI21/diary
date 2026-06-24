@@ -65,6 +65,16 @@ export interface NoteWithTag extends Note {
   tag: Tag | null;
 }
 
+/** Análisis del día (Markdown largo) generado externamente y guardado. */
+export interface Analysis {
+  id: string;
+  user_id: string;
+  day: string; // YYYY-MM-DD
+  text: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TagSummary {
   tagId: string | null;
   name: string;

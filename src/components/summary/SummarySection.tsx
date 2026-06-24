@@ -1,11 +1,19 @@
 import { useMemo, useState } from 'react';
 import type { EntryWithTag, GoalWithTag, NoteWithTag } from '../../types';
 import { computeDaySummary } from '../../utils/summary';
-import { groupEntriesByTag } from '../../utils/report';
+import {
+  buildAnalysisClipboard,
+  copyToClipboard,
+  groupEntriesByTag,
+  type ReportData,
+} from '../../utils/report';
 import { completionColorClasses } from '../../utils/goals';
 import { displayTime, formatDuration, todayISO } from '../../utils/date';
+import { useAnalysis } from '../../hooks/useAnalysis';
 import DonutChart from './DonutChart';
 import ReportDialog from './ReportDialog';
+import AnalysisDialog from './AnalysisDialog';
+import Markdown from './Markdown';
 import TagDot from '../tags/TagDot';
 
 interface Props {
@@ -14,6 +22,8 @@ interface Props {
   goals: GoalWithTag[];
   notes: NoteWithTag[];
 }
+
+type CopyState = 'idle' | 'copied' | 'error';
 
 export default function SummarySection({ day, entries, goals, notes }: Props) {
   const { summaries, totalMinutes } = useMemo(
@@ -27,9 +37,35 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
     [notes],
   );
 
-  const [showReport, setShowReport] = useState(false);
+  const { analysis, save: saveAnalysis, remove: removeAnalysis } = useAnalysis(day);
 
-  const hasAnything = entries.length > 0 || notes.length > 0 || completedGoals.length > 0;
+  const [showReport, setShowReport] = useState(false);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [copyState, setCopyState] = useState<CopyState>('idle');
+
+  const reportData: ReportData = {
+    day,
+    summaries,
+    totalMinutes,
+    entries,
+    notes,
+    goals,
+    analysis: analysis?.text ?? null,
+  };
+
+  async function copyForAnalysis() {
+    const ok = await copyToClipboard(buildAnalysisClipboard(reportData));
+    setCopyState(ok ? 'copied' : 'error');
+    setTimeout(() => setCopyState('idle'), 2500);
+  }
+
+  async function deleteAnalysis() {
+    if (!confirm('¿Eliminar el análisis guardado de este día?')) return;
+    await removeAnalysis();
+  }
+
+  const hasAnything =
+    entries.length > 0 || notes.length > 0 || completedGoals.length > 0 || !!analysis;
   if (!hasAnything) {
     return (
       <section className="card text-center text-sm text-slate-400">
@@ -155,14 +191,59 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
         )}
       </section>
 
-      <button onClick={() => setShowReport(true)} className="btn-primary w-full">
-        Descargar resumen
-      </button>
+      {/* Análisis guardado */}
+      {analysis && (
+        <section className="card space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Análisis guardado</h2>
+            <div className="flex gap-2">
+              <button onClick={() => setShowAnalysisDialog(true)} className="btn-ghost text-xs">
+                Editar
+              </button>
+              <button
+                onClick={deleteAnalysis}
+                className="btn-ghost text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+          <Markdown
+            text={analysis.text}
+            className="break-words text-slate-700 dark:text-slate-200"
+          />
+        </section>
+      )}
+
+      {/* Acciones */}
+      <div className="space-y-2">
+        <button onClick={() => setShowReport(true)} className="btn-primary w-full">
+          Descargar resumen
+        </button>
+        <button onClick={copyForAnalysis} className="btn-ghost w-full border border-slate-200 dark:border-slate-700">
+          {copyState === 'copied'
+            ? '¡Copiado!'
+            : copyState === 'error'
+              ? 'No se pudo copiar'
+              : 'Copiar resumen para análisis'}
+        </button>
+        <button
+          onClick={() => setShowAnalysisDialog(true)}
+          className="btn-ghost w-full border border-slate-200 dark:border-slate-700"
+        >
+          {analysis ? 'Editar análisis guardado' : 'Guardar análisis'}
+        </button>
+      </div>
 
       {showReport && (
-        <ReportDialog
-          data={{ day, summaries, totalMinutes, entries, notes, goals }}
-          onClose={() => setShowReport(false)}
+        <ReportDialog data={reportData} onClose={() => setShowReport(false)} />
+      )}
+
+      {showAnalysisDialog && (
+        <AnalysisDialog
+          initialText={analysis?.text ?? ''}
+          onSave={saveAnalysis}
+          onClose={() => setShowAnalysisDialog(false)}
         />
       )}
     </div>
