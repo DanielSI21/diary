@@ -194,20 +194,25 @@ function renderInlineLines(lines: string[]): ReactNode {
 }
 
 // Negrita, cursiva, código, enlaces [texto](url) y URLs sueltas.
-const INLINE_RE =
-  /(\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)]+|www\.[^\s)]+)/g;
+// OJO: `renderInline` es recursiva (negrita/cursiva). Cada llamada DEBE crear su
+// propio RegExp: un regex global a nivel de módulo comparte `lastIndex` entre las
+// llamadas anidadas, corrompe el recorrido del bucle exterior y genera nodos sin
+// fin (cuelgue / "Out of Memory").
+const INLINE_SRC =
+  '(\\*\\*[^*]+\\*\\*|__[^_]+__|\\*[^*\\n]+\\*|_[^_\\n]+_|`[^`]+`|\\[[^\\]]+\\]\\([^)]+\\)|https?:\\/\\/[^\\s)]+|www\\.[^\\s)]+)';
 
 function renderInline(text: string): ReactNode[] {
+  const re = new RegExp(INLINE_SRC, 'g');
   const nodes: ReactNode[] = [];
   let last = 0;
   let key = 0;
   let m: RegExpExecArray | null;
-  INLINE_RE.lastIndex = 0;
 
-  while ((m = INLINE_RE.exec(text))) {
+  while ((m = re.exec(text))) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     nodes.push(renderToken(m[0], key++));
     last = m.index + m[0].length;
+    if (re.lastIndex === m.index) re.lastIndex++; // seguridad anti-bucle
   }
   if (last < text.length) nodes.push(text.slice(last));
   return nodes;
