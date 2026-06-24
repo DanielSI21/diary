@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { todayISO } from '../utils/date';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,6 +10,7 @@ const navItemClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Layout() {
   const location = useLocation();
+  const { signOut } = useAuth();
   // El tab "Día" queda activo en cualquier ruta /day/*
   const dayActive = location.pathname.startsWith('/day');
 
@@ -18,7 +19,7 @@ export default function Layout() {
       <header className="flex items-center justify-between px-4 py-3">
         <h1 className="text-lg font-semibold tracking-tight">Diario</h1>
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => void signOut()}
           className="btn-ghost text-xs"
           title="Cerrar sesión"
         >

@@ -12,8 +12,14 @@ if (!url || !anonKey) {
 
 export const supabase = createClient(url, anonKey, {
   auth: {
+    // Guarda la sesión en localStorage (sobrevive al cierre/reinicio del navegador).
     persistSession: true,
+    storage: window.localStorage,
+    storageKey: 'diario-auth',
+    // Renueva el access token automáticamente antes de que expire.
     autoRefreshToken: true,
     detectSessionInUrl: true, // necesario para magic links
+    // PKCE: el refresh token se mantiene válido de forma indefinida mientras se use.
+    flowType: 'pkce',
   },
 });
