@@ -11,6 +11,9 @@ export function getInitialTheme(): Theme {
 
 /** Aplica el tema (clase .dark en <html>) y lo persiste. */
 export function applyTheme(theme: Theme): void {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  const root = document.documentElement;
+  root.classList.toggle('dark', theme === 'dark');
+  // Hace que los controles nativos (reloj de type="time", date) sigan el tema.
+  root.style.colorScheme = theme;
   localStorage.setItem(KEY, theme);
 }
