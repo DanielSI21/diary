@@ -4,6 +4,7 @@ import { deleteEntry, updateEntry } from '../../services/entries';
 import { displayTime, normalizeHM } from '../../utils/date';
 import TagSelect from '../tags/TagSelect';
 import TagDot from '../tags/TagDot';
+import TimeInput from '../TimeInput';
 
 interface Props {
   entry: EntryWithTag;
@@ -44,20 +45,19 @@ export default function DiaryRow({ entry, tags, onChanged }: Props) {
     return (
       <div className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
         <div className="flex items-center gap-2">
-          <input
-            type="time"
+          <TimeInput
             value={time}
-            onChange={(e) => setTime(e.target.value)}
-            aria-label="Hora de inicio"
-            className="input w-28 shrink-0 font-mono tabular-nums"
+            onChange={setTime}
+            ariaLabel="Hora de inicio"
+            className="input w-20 shrink-0 text-center font-mono tabular-nums"
           />
           <span className="text-slate-400">→</span>
-          <input
-            type="time"
+          <TimeInput
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            aria-label="Hora final (opcional)"
-            className="input w-28 shrink-0 font-mono tabular-nums"
+            onChange={setEndTime}
+            ariaLabel="Hora final (opcional)"
+            placeholder="fin"
+            className="input w-20 shrink-0 text-center font-mono tabular-nums placeholder:font-sans"
           />
         </div>
         <input

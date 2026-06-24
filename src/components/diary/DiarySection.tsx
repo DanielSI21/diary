@@ -3,6 +3,7 @@ import type { EntryWithTag, NoteWithTag, Tag } from '../../types';
 import { createEntry } from '../../services/entries';
 import { nowHM, normalizeHM } from '../../utils/date';
 import TagSelect from '../tags/TagSelect';
+import TimeInput from '../TimeInput';
 import DiaryRow from './DiaryRow';
 import NoteRow from '../notes/NoteRow';
 
@@ -102,22 +103,21 @@ export default function DiarySection({
       {/* Captura rápida */}
       <form onSubmit={add} className="space-y-2">
         <div className="flex items-center gap-2">
-          <input
-            type="time"
+          <TimeInput
             value={time}
-            onChange={(e) => setTime(e.target.value)}
-            aria-label="Hora de inicio"
-            className="input w-28 shrink-0 font-mono tabular-nums"
+            onChange={setTime}
+            ariaLabel="Hora de inicio"
+            className="input w-20 shrink-0 text-center font-mono tabular-nums"
           />
           <span className="text-slate-400">→</span>
-          <input
-            type="time"
+          <TimeInput
             value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            aria-label="Hora final (opcional)"
-            className="input w-28 shrink-0 font-mono tabular-nums"
+            onChange={setEndTime}
+            ariaLabel="Hora final (opcional)"
+            placeholder="fin"
+            className="input w-20 shrink-0 text-center font-mono tabular-nums placeholder:font-sans"
           />
-          <span className="text-xs text-slate-400">fin (opcional)</span>
+          <span className="text-xs text-slate-400">opcional</span>
         </div>
         <input
           value={text}

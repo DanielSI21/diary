@@ -35,6 +35,29 @@ export async function createEntry(input: {
   return data as EntryWithTag;
 }
 
+/** Inserta varios logs de golpe en un mismo día. Devuelve cuántos se crearon. */
+export async function createEntriesBulk(
+  day: string,
+  items: {
+    entry_time: string; // 'HH:MM'
+    end_time?: string | null; // 'HH:MM' opcional
+    text: string;
+    tag_id: string | null;
+  }[],
+): Promise<number> {
+  if (items.length === 0) return 0;
+  const rows = items.map((it) => ({
+    day,
+    entry_time: it.entry_time,
+    end_time: it.end_time ?? null,
+    text: it.text.trim(),
+    tag_id: it.tag_id,
+  }));
+  const { data, error } = await supabase.from('entries').insert(rows).select('id');
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 export async function updateEntry(
   id: string,
   patch: Partial<{

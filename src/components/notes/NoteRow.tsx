@@ -4,6 +4,7 @@ import { deleteNote, setNoteDone, updateNote } from '../../services/notes';
 import { displayTime, longDate, normalizeHM } from '../../utils/date';
 import TagSelect from '../tags/TagSelect';
 import TagDot from '../tags/TagDot';
+import TimeInput from '../TimeInput';
 import LinkedText from './LinkedText';
 
 interface Props {
@@ -54,12 +55,11 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
     return (
       <div className="rounded-lg border border-slate-200 p-2 dark:border-slate-700">
         <div className="flex items-center gap-2">
-          <input
-            type="time"
+          <TimeInput
             value={time}
-            onChange={(e) => setTime(e.target.value)}
-            aria-label="Hora"
-            className="input w-28 shrink-0 font-mono tabular-nums"
+            onChange={setTime}
+            ariaLabel="Hora"
+            className="input w-20 shrink-0 text-center font-mono tabular-nums"
           />
           <TagSelect tags={tags} value={tagId} onChange={setTagId} className="flex-1" />
         </div>

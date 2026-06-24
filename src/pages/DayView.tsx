@@ -12,6 +12,7 @@ import { useNotes, useDueNotes } from '../hooks/useNotes';
 import GoalsSection from '../components/goals/GoalsSection';
 import CompletionDialog from '../components/goals/CompletionDialog';
 import DiarySection from '../components/diary/DiarySection';
+import ImportLogs from '../components/diary/ImportLogs';
 import SummarySection from '../components/summary/SummarySection';
 import NotesSection from '../components/notes/NotesSection';
 import PendingBanner from '../components/notes/PendingBanner';
@@ -155,6 +156,7 @@ export default function DayView() {
             notes={notes}
             onNotesChanged={refreshNotes}
           />
+          <ImportLogs day={day} tags={tags} onImported={refreshEntries} />
         </>
       )}
 
