@@ -4,6 +4,7 @@ import { createGoal, deleteGoal, updateGoal } from '../../services/goals';
 import { completionColorClasses } from '../../utils/goals';
 import TagSelect from '../tags/TagSelect';
 import TagDot from '../tags/TagDot';
+import CollapsibleSection from '../CollapsibleSection';
 
 interface Props {
   day: string;
@@ -44,14 +45,14 @@ export default function GoalsSection({
   }
 
   return (
-    <section className="card">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-semibold">Objetivos del día</h2>
+    <CollapsibleSection
+      title="Objetivos del día"
+      right={
         <span className="text-xs text-slate-400">
           {goals.filter((g) => g.completed).length}/{goals.length}
         </span>
-      </div>
-
+      }
+    >
       <ul className="space-y-1">
         {goals.map((g) => (
           <GoalRow
@@ -88,7 +89,7 @@ export default function GoalsSection({
           </button>
         </div>
       </form>
-    </section>
+    </CollapsibleSection>
   );
 }
 

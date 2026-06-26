@@ -84,6 +84,7 @@ export async function updateNote(
     due_date: string | null;
     done: boolean;
     done_at: string | null;
+    analysis: string | null;
   }>,
 ): Promise<NoteWithTag> {
   const clean = { ...patch };
@@ -106,6 +107,19 @@ export async function setNoteDone(id: string, done: boolean): Promise<NoteWithTa
 export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase.from('notes').delete().eq('id', id);
   if (error) throw error;
+}
+
+/** Notas de un rango de días [start, end] inclusive (orden cronológico). */
+export async function listNotesRange(start: string, end: string): Promise<NoteWithTag[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select(SELECT_WITH_TAG)
+    .gte('day', start)
+    .lte('day', end)
+    .order('day')
+    .order('note_time');
+  if (error) throw error;
+  return (data ?? []) as NoteWithTag[];
 }
 
 /** Notas de un mes, opcionalmente filtradas por etiqueta. (Calendario) */

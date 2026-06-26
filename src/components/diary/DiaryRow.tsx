@@ -5,6 +5,9 @@ import { displayTime, normalizeHM } from '../../utils/date';
 import TagSelect from '../tags/TagSelect';
 import TagDot from '../tags/TagDot';
 import TimeInput from '../TimeInput';
+import CopyButton from '../CopyButton';
+import CollapsibleAnalysis from '../CollapsibleAnalysis';
+import AnalysisDialog from '../summary/AnalysisDialog';
 
 interface Props {
   entry: EntryWithTag;
@@ -19,6 +22,18 @@ export default function DiaryRow({ entry, tags, onChanged }: Props) {
   const [text, setText] = useState(entry.text);
   const [tagId, setTagId] = useState<string | null>(entry.tag_id);
   const [error, setError] = useState<string | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
+  async function saveAnalysis(value: string) {
+    await updateEntry(entry.id, { analysis: value.trim() || null });
+    await onChanged();
+  }
+
+  async function removeAnalysis() {
+    if (!confirm('¿Eliminar el análisis de este log?')) return;
+    await updateEntry(entry.id, { analysis: null });
+    await onChanged();
+  }
 
   async function save() {
     const value = text.trim();
@@ -81,40 +96,74 @@ export default function DiaryRow({ entry, tags, onChanged }: Props) {
   }
 
   return (
-    <div className="group flex items-start gap-2 rounded-lg px-1 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-      <span className="mt-0.5 w-[4.5rem] shrink-0 font-mono text-xs tabular-nums text-slate-500">
-        {displayTime(entry.entry_time)}
-        {entry.end_time && <span className="text-slate-400">–{displayTime(entry.end_time)}</span>}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="break-words text-sm">{entry.text}</p>
-        {entry.tag && (
-          <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-400">
-            <TagDot color={entry.tag.color} />
-            {entry.tag.name}
-          </span>
-        )}
+    <div className="rounded-lg px-1 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+      <div className="group flex items-start gap-2">
+        <span className="mt-0.5 w-[4.5rem] shrink-0 font-mono text-xs tabular-nums text-slate-500">
+          {displayTime(entry.entry_time)}
+          {entry.end_time && <span className="text-slate-400">–{displayTime(entry.end_time)}</span>}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="break-words text-sm">{entry.text}</p>
+          {entry.tag && (
+            <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-400">
+              <TagDot color={entry.tag.color} />
+              {entry.tag.name}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
+          <CopyButton text={entry.text} ariaLabel="Copiar texto del log" />
+          <button
+            onClick={() => setShowAnalysis(true)}
+            aria-label={entry.analysis ? 'Editar análisis' : 'Agregar análisis'}
+            className={`rounded p-1 hover:text-slate-700 ${
+              entry.analysis ? 'text-blue-500' : 'text-slate-400'
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-9-2h4m-4 4h4m-4-8h2M14 4l5 5m0 0l-3 .5.5-3z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setEditing(true)}
+            aria-label="Editar"
+            className="rounded p-1 text-slate-400 hover:text-slate-700"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+            </svg>
+          </button>
+          <button
+            onClick={remove}
+            aria-label="Eliminar"
+            className="rounded p-1 text-slate-400 hover:text-red-500"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" d="M6 7h12M9 7V5h6v2m-1 0v12M10 7v12M5 7l1 13h12l1-13" />
+            </svg>
+          </button>
+        </div>
       </div>
-      <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
-        <button
-          onClick={() => setEditing(true)}
-          aria-label="Editar"
-          className="rounded p-1 text-slate-400 hover:text-slate-700"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
-          </svg>
-        </button>
-        <button
-          onClick={remove}
-          aria-label="Eliminar"
-          className="rounded p-1 text-slate-400 hover:text-red-500"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" d="M6 7h12M9 7V5h6v2m-1 0v12M10 7v12M5 7l1 13h12l1-13" />
-          </svg>
-        </button>
-      </div>
+
+      {entry.analysis && (
+        <div className="pl-[4.75rem]">
+          <CollapsibleAnalysis
+            text={entry.analysis}
+            onEdit={() => setShowAnalysis(true)}
+            onDelete={removeAnalysis}
+          />
+        </div>
+      )}
+
+      {showAnalysis && (
+        <AnalysisDialog
+          initialText={entry.analysis ?? ''}
+          title={entry.analysis ? 'Editar análisis del log' : 'Agregar análisis al log'}
+          description="Pega el análisis generado por ChatGPT o Claude para este log, o sube un archivo .txt/.md."
+          onSave={saveAnalysis}
+          onClose={() => setShowAnalysis(false)}
+        />
+      )}
     </div>
   );
 }

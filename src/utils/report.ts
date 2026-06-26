@@ -1,6 +1,6 @@
 import type { EntryWithTag, GoalWithTag, NoteWithTag, TagSummary } from '../types';
 import { displayTime, formatDuration, longDate } from './date';
-import { ANALYSIS_PROMPT } from './analysisPrompt';
+import { ANALYSIS_PROMPT, WEEKLY_ANALYSIS_PROMPT } from './analysisPrompt';
 
 export interface ReportOptions {
   logs: boolean;
@@ -44,6 +44,16 @@ function logLine(e: EntryWithTag): string {
 function noteLine(n: NoteWithTag): string {
   const prefix = n.pending ? `[${n.done ? '✓' : 'Pendiente'}${n.due_date ? ` ${n.due_date}` : ''}] ` : '';
   return `${displayTime(n.note_time)} ${prefix}${n.text.replace(/\n+/g, ' ')}`;
+}
+
+/**
+ * Análisis adjunto a un log/nota como bloque citado e indentado bajo su ítem,
+ * claramente marcado para que el modelo no lo confunda con un registro original.
+ */
+function itemAnalysisLines(label: string, analysis: string): string[] {
+  const out = [`  > [${label}]`];
+  for (const l of analysis.trim().split(/\r?\n/)) out.push(`  > ${l}`);
+  return out;
 }
 
 /** Construye el reporte del día en Markdown según las opciones elegidas. */
@@ -143,7 +153,12 @@ export function buildAnalysisSummary(data: ReportData): string {
     lines.push('', '### Logs');
     for (const group of groupEntriesByTag(entries, summaries)) {
       lines.push('', `#### ${group.name}`);
-      for (const e of group.entries) lines.push(`- ${logLine(e)}`);
+      for (const e of group.entries) {
+        lines.push(`- ${logLine(e)}`);
+        if (e.analysis && e.analysis.trim()) {
+          lines.push(...itemAnalysisLines('Análisis previo de este log', e.analysis));
+        }
+      }
     }
   }
 
@@ -154,6 +169,9 @@ export function buildAnalysisSummary(data: ReportData): string {
     for (const n of sorted) {
       const tag = n.tag ? ` (${n.tag.name})` : '';
       lines.push(`- ${noteLine(n)}${tag}`);
+      if (n.analysis && n.analysis.trim()) {
+        lines.push(...itemAnalysisLines('Análisis previo de esta nota', n.analysis));
+      }
     }
   }
 
@@ -180,6 +198,59 @@ export function buildAnalysisClipboard(data: ReportData): string {
       '',
       data.analysis.trim(),
     );
+  }
+
+  return parts.join('\n') + '\n';
+}
+
+/** True si el día tiene algo que aportar al análisis (datos o análisis previo). */
+function dayHasContent(d: ReportData): boolean {
+  return (
+    d.entries.length > 0 ||
+    d.notes.length > 0 ||
+    d.goals.length > 0 ||
+    !!(d.analysis && d.analysis.trim())
+  );
+}
+
+/**
+ * Texto listo para pegar en un modelo: prompt semanal + resumen de cada uno de
+ * los últimos 7 días (con sus logs, notas, objetivos y análisis por ítem) más,
+ * cuando existe, el análisis previo guardado de cada día (claramente separado).
+ * `days` debe venir ordenado cronológicamente (más antiguo primero).
+ */
+export function buildWeeklyAnalysisClipboard(days: ReportData[]): string {
+  const used = days.filter(dayHasContent);
+  const parts: string[] = [];
+
+  parts.push('# Prompt de análisis semanal', '', WEEKLY_ANALYSIS_PROMPT);
+
+  const rangeLabel =
+    used.length > 0
+      ? `${longDate(used[0].day)} – ${longDate(used[used.length - 1].day)}`
+      : days.length > 0
+        ? `${longDate(days[0].day)} – ${longDate(days[days.length - 1].day)}`
+        : '';
+  parts.push('', `# Resumen de los últimos 7 días (${rangeLabel})`, '');
+
+  if (used.length === 0) {
+    parts.push('_Sin registros, notas ni objetivos en este periodo._');
+    return parts.join('\n') + '\n';
+  }
+
+  for (const d of used) {
+    parts.push(buildAnalysisSummary(d));
+    if (d.analysis && d.analysis.trim()) {
+      parts.push(
+        '',
+        `### Análisis previo guardado del día — ${longDate(d.day)}`,
+        '',
+        '> Lo siguiente es un análisis generado anteriormente para este día, NO un log original.',
+        '',
+        d.analysis.trim(),
+      );
+    }
+    parts.push('', '---', '');
   }
 
   return parts.join('\n') + '\n';

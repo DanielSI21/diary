@@ -6,6 +6,7 @@ import TagSelect from '../tags/TagSelect';
 import TimeInput from '../TimeInput';
 import DiaryRow from './DiaryRow';
 import NoteRow from '../notes/NoteRow';
+import CollapsibleSection from '../CollapsibleSection';
 
 interface Props {
   day: string;
@@ -86,9 +87,9 @@ export default function DiarySection({
   }
 
   return (
-    <section className="card">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-semibold">Diario del día</h2>
+    <CollapsibleSection
+      title="Diario del día"
+      right={
         <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <input
             type="checkbox"
@@ -98,8 +99,8 @@ export default function DiarySection({
           />
           Mostrar notas
         </label>
-      </div>
-
+      }
+    >
       {/* Captura rápida */}
       <form onSubmit={add} className="space-y-2">
         <div className="flex items-center gap-2">
@@ -149,6 +150,6 @@ export default function DiarySection({
           </p>
         )}
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }

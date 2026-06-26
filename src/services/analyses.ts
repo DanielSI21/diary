@@ -48,3 +48,15 @@ export async function deleteAnalysis(day: string): Promise<void> {
   const { error } = await supabase.from('analyses').delete().eq('day', day);
   if (error) throw error;
 }
+
+/** Análisis guardados en un rango de días [start, end] inclusive. */
+export async function listAnalysesRange(start: string, end: string): Promise<Analysis[]> {
+  const { data, error } = await supabase
+    .from('analyses')
+    .select('*')
+    .gte('day', start)
+    .lte('day', end)
+    .order('day');
+  if (error) throw error;
+  return (data ?? []) as Analysis[];
+}

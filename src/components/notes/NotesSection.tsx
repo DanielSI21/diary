@@ -5,6 +5,7 @@ import { nowHM, normalizeHM } from '../../utils/date';
 import TagSelect from '../tags/TagSelect';
 import TimeInput from '../TimeInput';
 import NoteRow from './NoteRow';
+import CollapsibleSection from '../CollapsibleSection';
 
 interface Props {
   day: string;
@@ -56,9 +57,7 @@ export default function NotesSection({ day, notes, tags, loading, onChanged }: P
   }
 
   return (
-    <section className="card">
-      <h2 className="mb-3 font-semibold">Notas del día</h2>
-
+    <CollapsibleSection title="Notas del día">
       <form onSubmit={add} className="space-y-2">
         <div className="flex items-center gap-2">
           <TimeInput
@@ -113,6 +112,6 @@ export default function NotesSection({ day, notes, tags, loading, onChanged }: P
           </p>
         )}
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }

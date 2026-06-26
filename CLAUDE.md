@@ -76,8 +76,8 @@ Todas las tablas con **RLS** `auth.uid() = user_id` (select/insert/update/delete
 |-----------|--------------|
 | `tags`    | `name`, `color`, `active`, `sort_order` · único por `(user_id, lower(name))` |
 | `goals`   | `day`, `text`, `completed`, `completion_percent` (0–100, def. 100), `tag_id`, `sort_order` |
-| `entries` | `day`, `entry_time`, `end_time?`, `text`, `tag_id`, `goal_id` |
-| `notes`   | `day`, `note_time`, `text`, `tag_id`, `pending`, `due_date?`, `done`, `done_at?` |
+| `entries` | `day`, `entry_time`, `end_time?`, `text`, `tag_id`, `goal_id`, `analysis?` (Markdown por log) |
+| `notes`   | `day`, `note_time`, `text`, `tag_id`, `pending`, `due_date?`, `done`, `done_at?`, `analysis?` (Markdown por nota) |
 | `analyses`| `day`, `text` (Markdown largo) · único por `(user_id, day)` — análisis externo del día |
 
 Vista `day_activity`: cuenta goals/entries/notes por `(user_id, day)` para el calendario
@@ -85,8 +85,8 @@ Vista `day_activity`: cuenta goals/entries/notes por `(user_id, day)` para el ca
 
 **Migraciones:** `schema.sql` es el estado base (tags/goals/entries). Para una BD existente
 ejecuta en orden `migration_002` (tag en goals + end_time en entries), `migration_003`
-(`completion_percent` + `goals.goal_id` en entries), `migration_004` (tabla `notes`) y
-`migration_005` (tabla `analyses`).
+(`completion_percent` + `goals.goal_id` en entries), `migration_004` (tabla `notes`),
+`migration_005` (tabla `analyses`) y `migration_006` (columna `analysis` en `entries` y `notes`).
 Al cambiar el esquema, **añade una nueva migración** idempotente (`if not exists`,
 `drop policy if exists`) en vez de editar las existentes.
 
@@ -114,12 +114,27 @@ Al cambiar el esquema, **añade una nueva migración** idempotente (`if not exis
   ChatGPT/Claude/Codex (`buildAnalysisClipboard`). «Guardar análisis» pega/sube (`.txt`/`.md`)
   un análisis externo (Markdown largo) ligado al día; se muestra en «Análisis guardado» y se
   puede editar, reemplazar o eliminar.
+- **Copiar texto** (`CopyButton`) — cada log y nota tiene un botón que copia **solo su texto**
+  al portapapeles (sin prompt ni formato), con feedback breve.
+- **Análisis por log/nota** (`CollapsibleAnalysis`, `AnalysisDialog`, columna `analysis`): cada
+  log o nota puede llevar un análisis Markdown externo. Por defecto no tiene ninguno; al
+  agregarlo (pegar/subir `.md`) se muestra **colapsado** debajo del ítem y se expande para
+  leerlo. Editable/eliminable. Se guarda con `updateEntry`/`updateNote({ analysis })`.
+- **Análisis semanal** (`SummarySection`, `buildWeeklyAnalysisClipboard`,
+  `WEEKLY_ANALYSIS_PROMPT`): «Copiar resumen de los últimos 7 días para análisis» copia el
+  prompt semanal + el resumen de los 7 días (día visto y los 6 anteriores) con logs, notas,
+  objetivos, los análisis guardados de cada día **y** los análisis por log/nota (todos
+  marcados/separados). Usa los fetchers de rango `list*Range(start, end)`.
 - **Importar logs** (`ImportLogs`, `utils/importLogs.ts`) — pega/sube JSON (p. ej. salida de
   ChatGPT/Claude; ver `PROMPT_IMPORTAR_LOGS.md`). Parser tolerante: acepta array o
   `{logs:[]}`, alias es/en de campos, cercos markdown; matchea tags por nombre.
 - **Calendario** (`CalendarPage`) — navega meses, colorea días con datos, filtra por tag,
   modos objetivos/logs.
 - **Ajustes** (`Settings`) — CRUD de tags (color, activo, orden) + toggle de tema.
+- **Secciones plegables** (`CollapsibleSection`) — las tarjetas de sección (Objetivos, Diario,
+  Notas y las del Resumen) llevan un chevron a la derecha de la cabecera para colapsar/expandir
+  y ojear rápido otras secciones. Además, las notas largas (`NoteRow`) se recortan con
+  «Ver más / Ver menos» (`line-clamp`).
 
 ### Regla de cálculo del resumen (`utils/summary.ts`)
 

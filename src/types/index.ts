@@ -36,6 +36,7 @@ export interface Entry {
   text: string;
   tag_id: string | null;
   goal_id: string | null; // objetivo del día al que se vinculó este log
+  analysis: string | null; // análisis externo (Markdown) adjunto a este log
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +57,7 @@ export interface Note {
   due_date: string | null; // YYYY-MM-DD — opcional, solo relevante si pending
   done: boolean; // pendiente resuelto
   done_at: string | null;
+  analysis: string | null; // análisis externo (Markdown) adjunto a esta nota
   created_at: string;
   updated_at: string;
 }

@@ -61,6 +61,20 @@ export async function deleteGoal(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Objetivos de un rango de días [start, end] inclusive. */
+export async function listGoalsRange(start: string, end: string): Promise<GoalWithTag[]> {
+  const { data, error } = await supabase
+    .from('goals')
+    .select(SELECT_WITH_TAG)
+    .gte('day', start)
+    .lte('day', end)
+    .order('day')
+    .order('sort_order')
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as GoalWithTag[];
+}
+
 /** Objetivos CUMPLIDOS de un mes, opcionalmente filtrados por etiqueta. (Calendario) */
 export async function listMonthCompletedGoals(
   year: number,

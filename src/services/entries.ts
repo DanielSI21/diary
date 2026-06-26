@@ -66,6 +66,7 @@ export async function updateEntry(
     text: string;
     tag_id: string | null;
     goal_id: string | null;
+    analysis: string | null;
   }>,
 ): Promise<EntryWithTag> {
   const clean = { ...patch };
@@ -119,6 +120,19 @@ export async function listMonthEntries(
   if (tagId) query = query.eq('tag_id', tagId);
 
   const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as EntryWithTag[];
+}
+
+/** Logs de un rango de días [start, end] inclusive (orden cronológico). */
+export async function listEntriesRange(start: string, end: string): Promise<EntryWithTag[]> {
+  const { data, error } = await supabase
+    .from('entries')
+    .select(SELECT_WITH_TAG)
+    .gte('day', start)
+    .lte('day', end)
+    .order('day')
+    .order('entry_time');
   if (error) throw error;
   return (data ?? []) as EntryWithTag[];
 }

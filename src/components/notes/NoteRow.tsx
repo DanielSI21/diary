@@ -6,6 +6,9 @@ import TagSelect from '../tags/TagSelect';
 import TagDot from '../tags/TagDot';
 import TimeInput from '../TimeInput';
 import LinkedText from './LinkedText';
+import CopyButton from '../CopyButton';
+import CollapsibleAnalysis from '../CollapsibleAnalysis';
+import AnalysisDialog from '../summary/AnalysisDialog';
 
 interface Props {
   note: NoteWithTag;
@@ -23,6 +26,22 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
   const [pending, setPending] = useState(note.pending);
   const [dueDate, setDueDate] = useState(note.due_date ?? '');
   const [error, setError] = useState<string | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Las notas pueden ser largas: si lo son, se colapsan y se ofrece «Ver más».
+  const isLong = note.text.length > 160 || note.text.split('\n').length > 4;
+
+  async function saveAnalysis(value: string) {
+    await updateNote(note.id, { analysis: value.trim() || null });
+    await onChanged();
+  }
+
+  async function removeAnalysis() {
+    if (!confirm('¿Eliminar el análisis de esta nota?')) return;
+    await updateNote(note.id, { analysis: null });
+    await onChanged();
+  }
 
   async function save() {
     const value = text.trim();
@@ -104,7 +123,8 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
   }
 
   return (
-    <div className="group flex items-start gap-2 rounded-lg px-1 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+    <div className="rounded-lg px-1 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+      <div className="group flex items-start gap-2">
       {note.pending ? (
         <button
           onClick={toggleDone}
@@ -130,8 +150,18 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
       <div className="min-w-0 flex-1">
         <LinkedText
           text={note.text}
-          className={`block break-words text-sm ${note.done ? 'text-slate-400 line-through' : ''}`}
+          className={`break-words text-sm ${note.done ? 'text-slate-400 line-through' : ''} ${
+            isLong && !expanded ? 'line-clamp-4' : 'block'
+          }`}
         />
+        {isLong && (
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="mt-0.5 text-xs font-medium text-blue-500 hover:text-blue-600"
+          >
+            {expanded ? 'Ver menos' : 'Ver más'}
+          </button>
+        )}
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400">
           {showDay && <span>{longDate(note.day)}</span>}
           {note.pending && (
@@ -149,6 +179,18 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
       </div>
 
       <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
+        <CopyButton text={note.text} ariaLabel="Copiar texto de la nota" />
+        <button
+          onClick={() => setShowAnalysis(true)}
+          aria-label={note.analysis ? 'Editar análisis' : 'Agregar análisis'}
+          className={`rounded p-1 hover:text-slate-700 ${
+            note.analysis ? 'text-blue-500' : 'text-slate-400'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-9-2h4m-4 4h4m-4-8h2M14 4l5 5m0 0l-3 .5.5-3z" />
+          </svg>
+        </button>
         <button
           onClick={() => setEditing(true)}
           aria-label="Editar"
@@ -168,6 +210,27 @@ export default function NoteRow({ note, tags, onChanged, showDay }: Props) {
           </svg>
         </button>
       </div>
+      </div>
+
+      {note.analysis && (
+        <div className="pl-7">
+          <CollapsibleAnalysis
+            text={note.analysis}
+            onEdit={() => setShowAnalysis(true)}
+            onDelete={removeAnalysis}
+          />
+        </div>
+      )}
+
+      {showAnalysis && (
+        <AnalysisDialog
+          initialText={note.analysis ?? ''}
+          title={note.analysis ? 'Editar análisis de la nota' : 'Agregar análisis a la nota'}
+          description="Pega el análisis generado por ChatGPT o Claude para esta nota, o sube un archivo .txt/.md."
+          onSave={saveAnalysis}
+          onClose={() => setShowAnalysis(false)}
+        />
+      )}
     </div>
   );
 }

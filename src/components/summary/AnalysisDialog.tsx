@@ -3,12 +3,22 @@ import { useRef, useState } from 'react';
 interface Props {
   /** Texto inicial (si se está editando un análisis existente). */
   initialText?: string;
+  /** Título del diálogo (default = análisis del día). */
+  title?: string;
+  /** Descripción bajo el título. */
+  description?: string;
   onSave: (text: string) => Promise<void> | void;
   onClose: () => void;
 }
 
 /** Diálogo para pegar o subir un análisis (texto largo, Markdown). */
-export default function AnalysisDialog({ initialText = '', onSave, onClose }: Props) {
+export default function AnalysisDialog({
+  initialText = '',
+  title = 'Guardar análisis',
+  description,
+  onSave,
+  onClose,
+}: Props) {
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,10 +62,14 @@ export default function AnalysisDialog({ initialText = '', onSave, onClose }: Pr
         onClick={(e) => e.stopPropagation()}
       >
         <div>
-          <h3 className="font-semibold">Guardar análisis</h3>
+          <h3 className="font-semibold">{title}</h3>
           <p className="mt-1 text-sm text-slate-500">
-            Pega el análisis generado por ChatGPT, Claude o Codex, o sube un archivo
-            <code className="mx-1">.txt</code>/<code>.md</code>.
+            {description ?? (
+              <>
+                Pega el análisis generado por ChatGPT, Claude o Codex, o sube un archivo
+                <code className="mx-1">.txt</code>/<code>.md</code>.
+              </>
+            )}
           </p>
         </div>
 

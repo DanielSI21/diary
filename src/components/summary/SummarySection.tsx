@@ -3,18 +3,24 @@ import type { EntryWithTag, GoalWithTag, NoteWithTag } from '../../types';
 import { computeDaySummary } from '../../utils/summary';
 import {
   buildAnalysisClipboard,
+  buildWeeklyAnalysisClipboard,
   copyToClipboard,
   groupEntriesByTag,
   type ReportData,
 } from '../../utils/report';
 import { completionColorClasses } from '../../utils/goals';
-import { displayTime, formatDuration, todayISO } from '../../utils/date';
+import { addDays, displayTime, formatDuration, todayISO } from '../../utils/date';
+import { listEntriesRange } from '../../services/entries';
+import { listNotesRange } from '../../services/notes';
+import { listGoalsRange } from '../../services/goals';
+import { listAnalysesRange } from '../../services/analyses';
 import { useAnalysis } from '../../hooks/useAnalysis';
 import DonutChart from './DonutChart';
 import ReportDialog from './ReportDialog';
 import AnalysisDialog from './AnalysisDialog';
 import Markdown from './Markdown';
 import TagDot from '../tags/TagDot';
+import CollapsibleSection from '../CollapsibleSection';
 
 interface Props {
   day: string;
@@ -42,6 +48,7 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
   const [showReport, setShowReport] = useState(false);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   const [copyState, setCopyState] = useState<CopyState>('idle');
+  const [weeklyState, setWeeklyState] = useState<CopyState>('idle');
 
   const reportData: ReportData = {
     day,
@@ -57,6 +64,41 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
     const ok = await copyToClipboard(buildAnalysisClipboard(reportData));
     setCopyState(ok ? 'copied' : 'error');
     setTimeout(() => setCopyState('idle'), 2500);
+  }
+
+  // Copia el resumen de los últimos 7 días (día visto y los 6 anteriores),
+  // incluyendo logs, notas, objetivos y los análisis previos (de día y por ítem).
+  async function copyWeeklyForAnalysis() {
+    try {
+      const start = addDays(day, -6);
+      const [ent, nts, gls, ans] = await Promise.all([
+        listEntriesRange(start, day),
+        listNotesRange(start, day),
+        listGoalsRange(start, day),
+        listAnalysesRange(start, day),
+      ]);
+      const analysisByDay = new Map(ans.map((a) => [a.day, a.text]));
+      const days: ReportData[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = addDays(day, -i);
+        const dEntries = ent.filter((e) => e.day === d);
+        const { summaries, totalMinutes } = computeDaySummary(dEntries, d);
+        days.push({
+          day: d,
+          summaries,
+          totalMinutes,
+          entries: dEntries,
+          notes: nts.filter((n) => n.day === d),
+          goals: gls.filter((g) => g.day === d),
+          analysis: analysisByDay.get(d) ?? null,
+        });
+      }
+      const ok = await copyToClipboard(buildWeeklyAnalysisClipboard(days));
+      setWeeklyState(ok ? 'copied' : 'error');
+    } catch {
+      setWeeklyState('error');
+    }
+    setTimeout(() => setWeeklyState('idle'), 2500);
   }
 
   async function deleteAnalysis() {
@@ -82,11 +124,10 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
   return (
     <div className="space-y-4">
       {entries.length > 0 && (
-        <section className="card">
-          <div className="mb-1 flex items-center justify-between">
-            <h2 className="font-semibold">Resumen del día</h2>
-            <span className="text-xs text-slate-400">Total: {formatDuration(totalMinutes)}</span>
-          </div>
+        <CollapsibleSection
+          title="Resumen del día"
+          right={<span className="text-xs text-slate-400">Total: {formatDuration(totalMinutes)}</span>}
+        >
           <p className="mb-4 text-xs text-slate-400">{boundaryNote}</p>
 
           <div className="flex flex-col items-center gap-5 sm:flex-row">
@@ -111,13 +152,11 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
               ))}
             </ul>
           </div>
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Detalle enlistado: objetivos, logs por etiqueta, notas */}
-      <section className="card space-y-4">
-        <h2 className="font-semibold">Detalle</h2>
-
+      <CollapsibleSection title="Detalle" bodyClassName="space-y-4">
         {completedGoals.length > 0 && (
           <div>
             <h3 className="mb-1.5 text-sm font-medium text-slate-500">Objetivos cumplidos</h3>
@@ -189,13 +228,13 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
             </ul>
           </div>
         )}
-      </section>
+      </CollapsibleSection>
 
       {/* Análisis guardado */}
       {analysis && (
-        <section className="card space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Análisis guardado</h2>
+        <CollapsibleSection
+          title="Análisis guardado"
+          right={
             <div className="flex gap-2">
               <button onClick={() => setShowAnalysisDialog(true)} className="btn-ghost text-xs">
                 Editar
@@ -207,12 +246,13 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
                 Eliminar
               </button>
             </div>
-          </div>
+          }
+        >
           <Markdown
             text={analysis.text}
             className="break-words text-slate-700 dark:text-slate-200"
           />
-        </section>
+        </CollapsibleSection>
       )}
 
       {/* Acciones */}
@@ -226,6 +266,16 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
             : copyState === 'error'
               ? 'No se pudo copiar'
               : 'Copiar resumen para análisis'}
+        </button>
+        <button
+          onClick={copyWeeklyForAnalysis}
+          className="btn-ghost w-full border border-slate-200 dark:border-slate-700"
+        >
+          {weeklyState === 'copied'
+            ? '¡Copiado!'
+            : weeklyState === 'error'
+              ? 'No se pudo copiar'
+              : 'Copiar resumen de los últimos 7 días para análisis'}
         </button>
         <button
           onClick={() => setShowAnalysisDialog(true)}
