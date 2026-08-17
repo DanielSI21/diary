@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { EntryWithTag } from '../types';
+import { fetchAllPages } from './pagination';
 
 const SELECT_WITH_TAG = '*, tag:tags(*)';
 
@@ -126,15 +127,19 @@ export async function listMonthEntries(
 
 /** Logs de un rango de días [start, end] inclusive (orden cronológico). */
 export async function listEntriesRange(start: string, end: string): Promise<EntryWithTag[]> {
-  const { data, error } = await supabase
-    .from('entries')
-    .select(SELECT_WITH_TAG)
-    .gte('day', start)
-    .lte('day', end)
-    .order('day')
-    .order('entry_time');
-  if (error) throw error;
-  return (data ?? []) as EntryWithTag[];
+  return fetchAllPages<EntryWithTag>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('entries')
+      .select(SELECT_WITH_TAG)
+      .gte('day', start)
+      .lte('day', end)
+      .order('day')
+      .order('entry_time')
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    return (data ?? []) as EntryWithTag[];
+  });
 }
 
 /** Días del mes (1..31) que tienen objetivos o entradas. Para marcar el calendario. */

@@ -192,3 +192,70 @@ Importante:
 * Si algo no se puede inferir con seguridad, dilo como hipótesis.
 * No me trates como paciente ni hagas diagnósticos clínicos.
 * El objetivo es entender cómo usé mi semana y cómo mejorar la próxima.`;
+
+/**
+ * Prompt para encontrar tendencias de largo plazo en todo el historial.
+ * El documento que lo acompaña incluye únicamente los días que tienen datos.
+ */
+export const HISTORY_ANALYSIS_PROMPT = `Quiero que analices TODO MI HISTORIAL a partir de los resúmenes diarios, logs, notas, pensamientos, metas y registros que te voy a proporcionar.
+
+No quiero una repetición cronológica ni un análisis aislado de cada día. Quiero una visión GLOBAL y longitudinal que encuentre patrones, cambios y tendencias útiles para mejorar mi productividad, concentración, claridad mental y toma de decisiones.
+
+IMPORTANTE sobre el material:
+- El periodo puede ser largo y algunos días sin actividad no aparecen en el documento.
+- Algunos días o algunos logs/notas pueden incluir un ANÁLISIS PREVIO ya generado. Úsalo como contexto, NO lo confundas con un registro original ni lo repitas tal cual.
+- Da más peso a los patrones sostenidos y distingue entre tendencias consistentes, episodios aislados e hipótesis con evidencia limitada.
+
+Instrucciones de análisis (a nivel HISTÓRICO):
+
+1. Resume el periodo completo en 8–12 líneas.
+2. Divide el historial en etapas o periodos significativos y explica qué cambió entre ellos.
+3. Analiza la distribución del tiempo por categorías/etiquetas y su evolución.
+4. Identifica patrones persistentes y ciclos de productividad, foco, dispersión, procrastinación e hiperfoco.
+5. Detecta hábitos que se consolidaron, se abandonaron o reaparecieron.
+6. Analiza el cumplimiento de objetivos: cuáles se completan, cuáles se postergan y qué condiciones parecen influir.
+7. Identifica loops abiertos y temas recurrentes en notas, pendientes, decisiones y preocupaciones.
+8. Relaciona energía y estado mental únicamente con foco, motivación y decisiones, sin diagnósticos clínicos.
+9. Señala qué sistemas o estrategias funcionaron de forma consistente y cuáles dejaron de funcionar.
+10. Extrae 6–10 insights de alto valor respaldados por ejemplos o periodos concretos.
+11. Propón un plan de mejora para los próximos 30 días con 4–6 acciones concretas y medibles.
+12. Termina con:
+
+    * "La tendencia más importante del historial es..."
+    * "El patrón principal que debo corregir es..."
+    * "La fortaleza que más debo aprovechar es..."
+    * "La apuesta clave para los próximos 30 días es..."
+
+Formato de salida deseado:
+
+# Análisis histórico
+
+## 1. Resumen ejecutivo
+
+## 2. Etapas y evolución
+
+## 3. Distribución y evolución del tiempo
+
+## 4. Patrones persistentes y ciclos
+
+## 5. Hábitos y objetivos
+
+## 6. Loops abiertos y temas recurrentes
+
+## 7. Energía, foco y estado mental
+
+## 8. Qué funcionó y qué dejó de funcionar
+
+## 9. Insights clave
+
+## 10. Plan de mejora de 30 días
+
+## 11. Cierre breve
+
+Importante:
+
+* Sé honesto, directo y útil.
+* Sustenta los hallazgos con tendencias observables en el material.
+* Si algo no se puede inferir con seguridad, dilo como hipótesis.
+* No me trates como paciente ni hagas diagnósticos clínicos.
+* Prioriza patrones, relaciones, cambios y sistemas sobre detalles aislados.`;

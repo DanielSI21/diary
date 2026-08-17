@@ -3,7 +3,9 @@ import type { EntryWithTag, GoalWithTag, NoteWithTag } from '../../types';
 import { computeDaySummary } from '../../utils/summary';
 import {
   buildAnalysisClipboard,
+  buildHistoryAnalysisClipboard,
   buildWeeklyAnalysisClipboard,
+  copyOrDownloadMarkdown,
   copyToClipboard,
   groupEntriesByTag,
   type ReportData,
@@ -30,6 +32,20 @@ interface Props {
 }
 
 type CopyState = 'idle' | 'copied' | 'error';
+type HistoryState = CopyState | 'loading' | 'downloaded';
+
+const HISTORY_MIN_DAY = '0001-01-01';
+const HISTORY_MAX_DAY = '9999-12-31';
+
+function groupByDay<T extends { day: string }>(items: T[]): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const item of items) {
+    const current = grouped.get(item.day);
+    if (current) current.push(item);
+    else grouped.set(item.day, [item]);
+  }
+  return grouped;
+}
 
 export default function SummarySection({ day, entries, goals, notes }: Props) {
   const { summaries, totalMinutes } = useMemo(
@@ -49,6 +65,7 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const [weeklyState, setWeeklyState] = useState<CopyState>('idle');
+  const [historyState, setHistoryState] = useState<HistoryState>('idle');
 
   const reportData: ReportData = {
     day,
@@ -99,6 +116,57 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
       setWeeklyState('error');
     }
     setTimeout(() => setWeeklyState('idle'), 2500);
+  }
+
+  // Recupera todo lo registrado, sin asumir una fecha inicial y sin omitir
+  // historiales que superen el límite de filas por respuesta de Supabase.
+  async function exportHistoryForAnalysis() {
+    setHistoryState('loading');
+    try {
+      const [ent, nts, gls, ans] = await Promise.all([
+        listEntriesRange(HISTORY_MIN_DAY, HISTORY_MAX_DAY),
+        listNotesRange(HISTORY_MIN_DAY, HISTORY_MAX_DAY),
+        listGoalsRange(HISTORY_MIN_DAY, HISTORY_MAX_DAY),
+        listAnalysesRange(HISTORY_MIN_DAY, HISTORY_MAX_DAY),
+      ]);
+
+      const entriesByDay = groupByDay(ent);
+      const notesByDay = groupByDay(nts);
+      const goalsByDay = groupByDay(gls);
+      const analysisByDay = new Map(ans.map((a) => [a.day, a.text]));
+      const dates = [...new Set([
+        ...entriesByDay.keys(),
+        ...notesByDay.keys(),
+        ...goalsByDay.keys(),
+        ...analysisByDay.keys(),
+      ])].sort();
+
+      const days: ReportData[] = dates.map((d) => {
+        const dEntries = entriesByDay.get(d) ?? [];
+        const { summaries, totalMinutes } = computeDaySummary(dEntries, d);
+        return {
+          day: d,
+          summaries,
+          totalMinutes,
+          entries: dEntries,
+          notes: notesByDay.get(d) ?? [],
+          goals: goalsByDay.get(d) ?? [],
+          analysis: analysisByDay.get(d) ?? null,
+        };
+      });
+
+      const content = buildHistoryAnalysisClipboard(days);
+      const firstDay = dates[0] ?? 'sin-registros';
+      const lastDay = dates[dates.length - 1] ?? 'sin-registros';
+      const result = await copyOrDownloadMarkdown(
+        content,
+        `historial-${firstDay}-a-${lastDay}.md`,
+      );
+      setHistoryState(result);
+    } catch {
+      setHistoryState('error');
+    }
+    setTimeout(() => setHistoryState('idle'), 3500);
   }
 
   async function deleteAnalysis() {
@@ -276,6 +344,21 @@ export default function SummarySection({ day, entries, goals, notes }: Props) {
             : weeklyState === 'error'
               ? 'No se pudo copiar'
               : 'Copiar resumen de los últimos 7 días para análisis'}
+        </button>
+        <button
+          onClick={exportHistoryForAnalysis}
+          disabled={historyState === 'loading'}
+          className="btn-ghost w-full border border-slate-200 dark:border-slate-700 disabled:cursor-wait disabled:opacity-60"
+        >
+          {historyState === 'loading'
+            ? 'Preparando historial…'
+            : historyState === 'copied'
+              ? '¡Historial copiado!'
+              : historyState === 'downloaded'
+                ? 'Historial descargado en Markdown'
+                : historyState === 'error'
+                  ? 'No se pudo exportar el historial'
+                  : 'Copiar historial completo para análisis'}
         </button>
         <button
           onClick={() => setShowAnalysisDialog(true)}

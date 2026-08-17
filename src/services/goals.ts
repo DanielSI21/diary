@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { GoalWithTag } from '../types';
+import { fetchAllPages } from './pagination';
 
 const SELECT_WITH_TAG = '*, tag:tags(*)';
 
@@ -63,16 +64,20 @@ export async function deleteGoal(id: string): Promise<void> {
 
 /** Objetivos de un rango de días [start, end] inclusive. */
 export async function listGoalsRange(start: string, end: string): Promise<GoalWithTag[]> {
-  const { data, error } = await supabase
-    .from('goals')
-    .select(SELECT_WITH_TAG)
-    .gte('day', start)
-    .lte('day', end)
-    .order('day')
-    .order('sort_order')
-    .order('created_at');
-  if (error) throw error;
-  return (data ?? []) as GoalWithTag[];
+  return fetchAllPages<GoalWithTag>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('goals')
+      .select(SELECT_WITH_TAG)
+      .gte('day', start)
+      .lte('day', end)
+      .order('day')
+      .order('sort_order')
+      .order('created_at')
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    return (data ?? []) as GoalWithTag[];
+  });
 }
 
 /** Objetivos CUMPLIDOS de un mes, opcionalmente filtrados por etiqueta. (Calendario) */

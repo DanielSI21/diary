@@ -1,6 +1,10 @@
 import type { EntryWithTag, GoalWithTag, NoteWithTag, TagSummary } from '../types';
 import { displayTime, formatDuration, longDate } from './date';
-import { ANALYSIS_PROMPT, WEEKLY_ANALYSIS_PROMPT } from './analysisPrompt';
+import {
+  ANALYSIS_PROMPT,
+  HISTORY_ANALYSIS_PROMPT,
+  WEEKLY_ANALYSIS_PROMPT,
+} from './analysisPrompt';
 
 export interface ReportOptions {
   logs: boolean;
@@ -256,6 +260,45 @@ export function buildWeeklyAnalysisClipboard(days: ReportData[]): string {
   return parts.join('\n') + '\n';
 }
 
+/**
+ * Documento completo para el análisis longitudinal de todo el historial.
+ * `days` debe incluir los días con datos, ordenados del más antiguo al más reciente.
+ */
+export function buildHistoryAnalysisClipboard(days: ReportData[]): string {
+  const used = days.filter(dayHasContent);
+  const parts: string[] = [];
+
+  parts.push('# Prompt de análisis histórico', '', HISTORY_ANALYSIS_PROMPT);
+
+  const rangeLabel =
+    used.length > 0
+      ? `${longDate(used[0].day)} – ${longDate(used[used.length - 1].day)}`
+      : 'sin fechas registradas';
+  parts.push('', `# Historial completo (${rangeLabel})`, '');
+
+  if (used.length === 0) {
+    parts.push('_No hay registros, notas, objetivos ni análisis guardados._');
+    return parts.join('\n') + '\n';
+  }
+
+  for (const d of used) {
+    parts.push(buildAnalysisSummary(d));
+    if (d.analysis && d.analysis.trim()) {
+      parts.push(
+        '',
+        `### Análisis previo guardado del día — ${longDate(d.day)}`,
+        '',
+        '> Lo siguiente es un análisis generado anteriormente para este día, NO un log original.',
+        '',
+        d.analysis.trim(),
+      );
+    }
+    parts.push('', '---', '');
+  }
+
+  return parts.join('\n') + '\n';
+}
+
 /** Copia texto al portapapeles; devuelve true si lo logró. */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -282,15 +325,37 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/** Descarga el texto como archivo (Markdown). */
-export function downloadReport(day: string, content: string): void {
+/** Descarga texto como archivo Markdown. */
+export function downloadMarkdown(filename: string, content: string): void {
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `resumen-${day}.md`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/** Descarga el reporte diario con su nombre convencional. */
+export function downloadReport(day: string, content: string): void {
+  downloadMarkdown(`resumen-${day}.md`, content);
+}
+
+export type ClipboardExportResult = 'copied' | 'downloaded';
+
+// Umbral conservador: no existe un límite único de portapapeles entre navegadores/PWA.
+const SAFE_CLIPBOARD_LENGTH = 500_000;
+
+/** Copia el Markdown cuando es razonable; si es muy grande o falla, lo descarga. */
+export async function copyOrDownloadMarkdown(
+  content: string,
+  filename: string,
+): Promise<ClipboardExportResult> {
+  if (content.length <= SAFE_CLIPBOARD_LENGTH && (await copyToClipboard(content))) {
+    return 'copied';
+  }
+  downloadMarkdown(filename, content);
+  return 'downloaded';
 }

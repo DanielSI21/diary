@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Analysis } from '../types';
+import { fetchAllPages } from './pagination';
 
 /** Análisis guardado de un día (o null si no existe). */
 export async function getAnalysis(day: string): Promise<Analysis | null> {
@@ -51,12 +52,16 @@ export async function deleteAnalysis(day: string): Promise<void> {
 
 /** Análisis guardados en un rango de días [start, end] inclusive. */
 export async function listAnalysesRange(start: string, end: string): Promise<Analysis[]> {
-  const { data, error } = await supabase
-    .from('analyses')
-    .select('*')
-    .gte('day', start)
-    .lte('day', end)
-    .order('day');
-  if (error) throw error;
-  return (data ?? []) as Analysis[];
+  return fetchAllPages<Analysis>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('analyses')
+      .select('*')
+      .gte('day', start)
+      .lte('day', end)
+      .order('day')
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    return (data ?? []) as Analysis[];
+  });
 }

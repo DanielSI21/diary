@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { NoteWithTag } from '../types';
+import { fetchAllPages } from './pagination';
 
 const SELECT_WITH_TAG = '*, tag:tags(*)';
 
@@ -111,15 +112,19 @@ export async function deleteNote(id: string): Promise<void> {
 
 /** Notas de un rango de días [start, end] inclusive (orden cronológico). */
 export async function listNotesRange(start: string, end: string): Promise<NoteWithTag[]> {
-  const { data, error } = await supabase
-    .from('notes')
-    .select(SELECT_WITH_TAG)
-    .gte('day', start)
-    .lte('day', end)
-    .order('day')
-    .order('note_time');
-  if (error) throw error;
-  return (data ?? []) as NoteWithTag[];
+  return fetchAllPages<NoteWithTag>(async (from, to) => {
+    const { data, error } = await supabase
+      .from('notes')
+      .select(SELECT_WITH_TAG)
+      .gte('day', start)
+      .lte('day', end)
+      .order('day')
+      .order('note_time')
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    return (data ?? []) as NoteWithTag[];
+  });
 }
 
 /** Notas de un mes, opcionalmente filtradas por etiqueta. (Calendario) */
